@@ -7,14 +7,15 @@
 <title>The Board</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,800;0,900;1,600&family=Archivo:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
 <style>
 /* Layout: an edition of The Board. Paper page, forest-green masthead and record band, moss rules between sections, game cards set like a sports desk. Colours sampled from @theboardsportshq; a deliberate single light look to match the brand. */
 :root {
   --paper: #f4f5f0; --card: #fbfaf5; --ink: #10231d; --forest: #10231d; --forest-2: #16291c;
   --moss: #77964a; --moss-soft: #abbd8e; --rule: #d9ddd0; --muted: #5d6a60; --cream: #efe4c8;
-  --display: "Playfair Display", "Bodoni 72", Didot, Georgia, serif;
-  --body: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --display: "Geist", "Helvetica Neue", Arial, sans-serif;
+  --body: "Geist", "Helvetica Neue", Arial, sans-serif;
+  --mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
   color-scheme: light;
 }
 * { box-sizing: border-box; }
@@ -239,6 +240,28 @@ footer .tag { font-size: .62rem; letter-spacing: .22em; text-transform: uppercas
 .mk.with { color: var(--moss); }
 .mk.against { color: #9b4a3a; }
 .mk.flat { color: var(--muted); font-weight: 500; }
+
+/* type: minimal. One sans at medium weight, mono numbers, sentence case */
+.hero h1, h2, h3, .mark .name strong, .mono b, .abbr, .board-card h3, .sport h3, .step h3, .how h3, .panel-empty strong,
+.edge-row .what strong, .odds-table td.tm, .edges-table td.pk { font-weight: 500; text-transform: none; letter-spacing: -0.01em; font-style: normal; }
+.hero h1 { font-size: clamp(2.2rem, 6.5vw, 3.6rem); line-height: 1.05; letter-spacing: -0.03em; }
+.hero h1 em, .hero h1 .line2 { font-style: normal; font-weight: 400; color: var(--muted); font-size: .62em; letter-spacing: -0.02em; }
+h2 { font-size: 1.35rem; letter-spacing: -0.015em; }
+.mark .name strong { font-size: 1rem; letter-spacing: .02em; text-transform: uppercase; }
+.mono b { font-weight: 600; font-size: 2rem; }
+.abbr { font-size: 1.05rem; } .abbr.long { font-size: 1rem; }
+.board-card h3, .sport h3 { font-size: 1.15rem; }
+.step h3, .how h3 { font-size: 1.05rem; color: inherit; }
+.how h3 { color: var(--cream); }
+.score, .big, .edge-row .n, .edge-row .pts, .board-card .nums b, .edges-table td.ed, .b-total b, .wp-labels b,
+.kv span:last-child, .cmp td, .b-val, .odds-table td, .rec-table td, .edges-table td { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.score { font-weight: 500; font-size: 1rem; }
+.big { font-weight: 400; font-size: 1.7rem; letter-spacing: -0.02em; }
+.edge-row .n, .edge-row .pts, .board-card .nums b { font-weight: 400; }
+.edges-table td.ed, .b-total b, .wp-labels b { font-weight: 500; }
+.edge-row .what strong, .edges-table td.pk { font-family: var(--body); font-size: 1rem; }
+.odds-table td.tm, .edges-table td:nth-child(4), .rec-table td:nth-child(2), .edges-table td:nth-child(2) { font-family: var(--body); }
+.chip { font-weight: 600; }
 
 </style>
 
