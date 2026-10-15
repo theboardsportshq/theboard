@@ -263,9 +263,17 @@ h2 { font-size: 1.35rem; letter-spacing: -0.015em; }
 .odds-table td.tm, .edges-table td:nth-child(4), .rec-table td:nth-child(2), .edges-table td:nth-child(2) { font-family: var(--body); }
 .chip { font-weight: 600; }
 
-/* rounded game cards */
-.game { border-radius: 14px; overflow: hidden; }
+/* rounded corners */
+:root { --r: 14px; --r-sm: 8px; }
+.game, .board-card, .sport, .how-band, .rec-table, .panel-empty, .top-edges, .edges-table, .step, .map-card, .odds-table, .strip, .proof { border-radius: var(--r); }
+.game, .top-edges, .edges-table, .odds-table, .rec-table, .strip, .proof { overflow: hidden; }
 .game.pick { border-left-width: 1px; box-shadow: inset 4px 0 0 var(--moss); }
+.cta, .filters button, .note-line, .cmp-wrap { border-radius: var(--r-sm); }
+.chip { border-radius: 999px; padding: 3px 9px; }
+.wp-track { border-radius: 999px; }
+.b-bar { border-radius: 4px; }
+.note-line { border-left-width: 0; box-shadow: inset 3px 0 0 var(--moss); }
+.mono b, .mark .mono { border-radius: 6px; }
 
 </style>
 
