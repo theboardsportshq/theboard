@@ -1360,12 +1360,11 @@ const SPORTS = {
     const sc2 = section('The game in charts', 'Hover or tap any mark for the numbers');
     const cg = el('div', 'viz-grid'); sc2.appendChild(cg); view.appendChild(sc2);
     VW = colW(cg, 420);
-    [chartWaterfall(g), chartDistribution(g, sp), chartBox(g), sp === 'nfl' ? chartScatter(g) : null, sp === 'nfl' ? chartTrend(g) : null].forEach(c => { if (c) cg.appendChild(c); });
+    [chartDistribution(g, sp), chartWaterfall(g), sp === 'nfl' ? chartTrend(g) : null].forEach(c => { if (c) cg.appendChild(c); });
     VW = null;
     if (g.profile) {
       const s2 = section('How they rate', 'Percentile vs the league · 100 is best · adjusted for opponents');
       const grid = el('div', 'duo');
-      const rg = el('div', 'duo'); s2.appendChild(rg); view.appendChild(s2); VW = colW(rg, 280); rg.append(chartRadar(g, 'off'), chartRadar(g, 'dfn')); VW = null;
       grid.append(pctTable('Offence', g.profile.away.off, g.profile.home.off, g.away, g.home), pctTable('Defence', g.profile.away.dfn, g.profile.home.dfn, g.away, g.home));
       s2.appendChild(grid);
       s2.appendChild(el('p', 'board-note', 'Read across: ' + g.away + '\'s offence meets ' + g.home + '\'s defence, and the other way round. ' + (sp === 'nfl' ? 'Protection is how rarely the quarterback is pressured; pace is how quickly the offence snaps the ball.' : 'Line play is yards credited to the offensive line on runs; front seven is how often the defence stuffs runs at or behind the line; pace is plays per game. Ranked against FBS teams.')));
