@@ -326,6 +326,45 @@ tr.tdrow.open td:first-child::after { content: " −"; }
 .subnav button[aria-pressed="true"] { background: var(--forest); color: var(--cream); border-color: var(--forest); }
 @media (max-width: 440px) { nav.sports { gap: 0; flex-wrap: nowrap; } nav.sports button { padding: 6px 6px; letter-spacing: .06em; font-size: .66rem; } }
 
+/* props by game */
+.pfilters { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-start; margin-bottom: 4px; }
+.pfilters .filters { margin-bottom: 8px; }
+.gsel { font: inherit; font-size: .8rem; padding: 6px 10px; border: 1px solid var(--rule); border-radius: var(--r-sm); background: var(--card); color: var(--ink); max-width: 100%; }
+.pgames { display: flex; flex-direction: column; gap: 10px; }
+.pgame { background: var(--card); border: 1px solid var(--rule); border-radius: var(--r, 12px); overflow: hidden; }
+.pgame.played { opacity: .6; }
+.pg-head { width: 100%; display: flex; align-items: center; gap: 12px; padding: 14px 16px; background: none; border: 0; cursor: pointer; text-align: left; color: inherit; font: inherit; }
+.pg-title { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.pg-title strong { font-size: 1.02rem; }
+.pg-meta { display: flex; gap: 10px; font-size: .78rem; color: var(--muted); white-space: nowrap; }
+.pg-leans { color: var(--moss); font-weight: 600; }
+.pg-head .chev { width: 10px; height: 10px; flex: none; border-right: 2px solid var(--moss); border-bottom: 2px solid var(--moss); transform: rotate(45deg); transition: transform .2s; margin: 0 4px 4px; }
+.pg-head[aria-expanded="true"] .chev { transform: rotate(-135deg); margin: 4px 4px 0; }
+.pg-body { padding: 0 12px 12px; display: flex; flex-direction: column; gap: 10px; }
+.pg-body table caption { text-align: left; font-weight: 600; font-size: .72rem; letter-spacing: .12em; padding: 8px 10px 4px; color: var(--muted); }
+.pg-body tbody td { border-bottom: 0; padding-top: 6px; padding-bottom: 6px; }
+.pg-body tr.pplayer td { font-weight: 600; font-size: .92rem; padding-top: 14px; border-top: 1px solid var(--rule); }
+.pg-body tbody tr.pplayer:first-child td { border-top: 0; }
+.pg-body tbody tr:not(.pplayer) td:first-child { padding-left: 22px; color: var(--muted); }
+.pg-body .opened { display: block; font-size: .68rem; color: var(--muted); }
+.pg-body .odds-table table { min-width: 0; width: 100%; }
+@media (max-width: 640px) {
+  .pg-body { padding: 0 4px 6px; }
+  .pg-body th { letter-spacing: .06em; }
+  .pg-body .pbar .track { display: none; }
+  .pg-body th, .pg-body td { padding-left: 4px; padding-right: 4px; font-size: .76rem; }
+  .pg-body .opened { font-size: .62rem; }
+  .pg-body tbody tr:not(.pplayer) td:first-child { padding-left: 12px; }
+  .pg-body thead th:nth-child(4) { font-size: 0; } .pg-body thead th:nth-child(4)::after { content: 'Over'; font-size: .6rem; }
+  .pg-body .skipwhy { display: none; }
+  .pg-body .pcall .chip.lean { display: none; }
+  .pg-body .pcall .chip { padding: 3px 6px; }
+  .pg-body .lf { display: none; }
+}
+.pg-body .ls { display: none; }
+@media (max-width: 640px) { .pg-body .ls { display: inline; } }
+@media (max-width: 640px) { .pg-meta span:first-child { display: none; } }
+
 </style>
 
 
@@ -813,26 +852,71 @@ const SPORTS = {
     const P = PROPS.props, nL = P.filter(x => x.lean).length;
     const s1 = section('Player props', 'NFL week ' + PROPS.week + ' · ' + P.length + ' DraftKings lines · ' + nL + ' leans');
     s1.appendChild(el('p', 'board-note', 'Each projection comes from the player\'s share of his team\'s targets, carries or dropbacks, the team\'s expected volume from the spread and total, his efficiency and the defence he faces. Tested on every game since 2019 using only earlier data, it beat players\' recent averages on every stat and its chances were well calibrated. The book knows news the model can\'t see, so each chance is pulled most of the way back toward the line, and nothing leans when the line has jumped since it opened or a teammate\'s absence may change the role. Leans are tracked in public, not counted as picks.'));
-    let stat = 'all', only = false;
-    const f = el('div', 'filters'); const list = el('div', 'odds-table');
-    const stats = [['all', 'All'], ['rec_yds', 'Rec yds'], ['rec', 'Receptions'], ['rush_yds', 'Rush yds'], ['car', 'Carries'], ['pass_yds', 'Pass yds']];
+    let stat = 'all', only = false, gsel = 'all';
+    const f = el('div', 'filters'); const list = el('div', 'pgames');
+    const stats = [['all', 'All'], ['pass_yds', 'Pass yds'], ['rush_yds', 'Rush yds'], ['car', 'Carries'], ['rec_yds', 'Rec yds'], ['rec', 'Receptions']];
+    const SO = { pass_yds: 0, rush_yds: 1, car: 2, rec_yds: 3, rec: 4 };
+    const GM = {}; (SPORTS.nfl.games || []).forEach(g => { GM[g.id] = g; });
+    const tmin = t => { const m = /(\d+):(\d+)\s*(AM|PM)/i.exec(t || ''); return m ? ((+m[1] % 12) + (/pm/i.test(m[3]) ? 12 : 0)) * 60 + +m[2] : 0; };
+    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+    const gids = [...new Set(P.map(x => x.game))].map(id => {
+      const g = GM[id] || {}; const pr = id.split('_');
+      return { id, g, away: g.away || pr[2], home: g.home || pr[3], kick: g.kick || '', t: tmin(g.kick_time), played: !!g.kick && g.kick < today };
+    }).sort((x, y) => (x.played - y.played) || (x.kick < y.kick ? -1 : x.kick > y.kick ? 1 : x.t - y.t || (x.away < y.away ? -1 : 1)));
+    const sel = el('select', 'gsel'); sel.setAttribute('aria-label', 'Game');
+    const o0 = el('option', null, 'All games'); o0.value = 'all'; sel.appendChild(o0);
+    gids.forEach(G => { const o = el('option', null, G.away + ' @ ' + G.home + (G.kick ? ' · ' + day(G.kick) : '') + (G.played ? ' (played)' : '')); o.value = G.id; sel.appendChild(o); });
+    sel.addEventListener('change', () => { gsel = sel.value; draw(); });
+    const pRow = (x, first) => {
+      const tr = el('tr');
+      const lc = el('td', 'num', String(x.line)); if (x.open != null && x.open !== x.line) lc.appendChild(el('span', 'opened', 'opened ' + x.open));
+      const SH = { pass_yds: 'Pass yds', rush_yds: 'Rush yds', car: 'Carries', rec_yds: 'Rec yds', rec: 'Catches' };
+      const lab = el('td'); lab.append(el('span', 'lf', x.label), el('span', 'ls', SH[x.stat] || x.label));
+      tr.append(lab, lc, el('td', 'num', String(x.proj)));
+      const pc = el('td', 'pbar'); const wr = el('div', 'pb'); const trk = el('div', 'track'); const fl = el('div', 'fill' + (x.p_over >= 57 ? ' high' : x.p_over <= 43 ? ' low' : '')); fl.style.width = x.p_over + '%'; trk.appendChild(fl); wr.append(trk, el('span', null, x.p_over.toFixed(0) + '%')); pc.appendChild(wr); tr.appendChild(pc);
+      const c = el('td', 'pcall'); if (x.lean) { const ch = el('span', 'chip pick'); ch.append(el('span', 'lf', x.lean + ' ' + x.line), el('span', 'ls', x.lean[0] + ' ' + x.line)); c.appendChild(ch); } else if (x.skip) { const sk = el('span', 'chip lean', 'No call'); sk.title = x.skip; c.appendChild(sk); c.appendChild(el('div', 'skipwhy', x.skip)); } else c.appendChild(el('span', 'chip lean', 'No edge'));
+      tr.appendChild(c); return tr;
+    };
     const draw = () => {
       list.innerHTML = '';
-      const t = el('table'); const hr = el('tr');
-      ['Player', 'Prop', 'Line', 'Projection', 'Over', 'Call'].forEach(x => hr.appendChild(el('th', null, x)));
-      const th = el('thead'); th.appendChild(hr); t.appendChild(th); const tb = el('tbody');
-      P.filter(x => (stat === 'all' || x.stat === stat) && (!only || x.lean)).forEach(x => {
-        const tr = el('tr'); tr.appendChild(el('td', 'tm', x.name + ' · ' + x.team + ' vs ' + x.opp));
-        tr.append(el('td', null, x.label), el('td', null, x.line + (x.open != null && x.open !== x.line ? ' (opened ' + x.open + ')' : '')), el('td', null, String(x.proj)));
-        const pc = el('td', 'pbar'); const wr = el('div', 'pb'); const trk = el('div', 'track'); const fl = el('div', 'fill' + (x.p_over >= 57 ? ' high' : x.p_over <= 43 ? ' low' : '')); fl.style.width = x.p_over + '%'; trk.appendChild(fl); wr.append(trk, el('span', null, x.p_over.toFixed(0) + '%')); pc.appendChild(wr); tr.appendChild(pc);
-        const c = el('td'); if (x.lean) c.appendChild(el('span', 'chip pick', x.lean + ' ' + x.line)); else if (x.skip) { const sk = el('span', 'chip lean', 'No call'); sk.title = x.skip; c.appendChild(sk); c.appendChild(el('div', 'skipwhy', x.skip)); } else c.appendChild(el('span', 'chip lean', 'No edge'));
-        tr.appendChild(c); tb.appendChild(tr);
+      let shown = 0;
+      gids.filter(G => gsel === 'all' || G.id === gsel).forEach(G => {
+        const rows = P.filter(x => x.game === G.id && (stat === 'all' || x.stat === stat) && (!only || x.lean));
+        if (!rows.length) return; shown++;
+        const nl = rows.filter(x => x.lean).length;
+        const card = el('article', 'pgame' + (G.played ? ' played' : ''));
+        const head = el('button', 'pg-head'); head.type = 'button';
+        const open = gsel !== 'all' || only || (!G.played && nl > 0 && false);
+        head.setAttribute('aria-expanded', String(open));
+        const ttl = el('div', 'pg-title'); ttl.append(el('strong', null, G.away + ' @ ' + G.home),
+          el('span', 'when', [G.kick ? day(G.kick) : '', G.g.kick_time || '', G.played ? 'Played' : ''].filter(Boolean).join(' · ')));
+        const meta = el('div', 'pg-meta'); meta.append(el('span', null, rows.length + ' props'), el('span', nl ? 'pg-leans' : null, nl + (nl === 1 ? ' lean' : ' leans')));
+        const chev = el('span', 'chev'); chev.setAttribute('aria-hidden', 'true');
+        head.append(ttl, meta, chev);
+        const body = el('div', 'pg-body'); body.hidden = !open;
+        head.addEventListener('click', () => { const o = head.getAttribute('aria-expanded') !== 'true'; head.setAttribute('aria-expanded', String(o)); body.hidden = !o; });
+        [G.away, G.home].forEach(team => {
+          const tr_ = rows.filter(x => x.team === team); if (!tr_.length) return;
+          const by = {}; tr_.forEach(x => { (by[x.pid] = by[x.pid] || []).push(x); });
+          const rank = a => { const m = {}; a.forEach(x => { m[x.stat] = x.line; }); return m.pass_yds != null ? -1e4 - m.pass_yds : m.rush_yds != null && (m.rec_yds == null || m.rush_yds >= m.rec_yds) ? -5e3 - m.rush_yds : -(m.rec_yds || m.rec * 10 || 0); };
+          const players = Object.values(by).sort((a, b) => rank(a) - rank(b));
+          const wrap = el('div', 'odds-table compact');
+          const t = el('table'); const cap = el('caption', null, team); t.appendChild(cap);
+          const hr = el('tr'); ['Prop', 'Line', 'Proj', 'Over chance', 'Call'].forEach(x => hr.appendChild(el('th', null, x)));
+          const th = el('thead'); th.appendChild(hr); t.appendChild(th); const tb = el('tbody');
+          players.forEach(a => { const ph = el('tr', 'pplayer'); const pc = el('td', null, a[0].name); pc.colSpan = 5; ph.appendChild(pc); tb.appendChild(ph);
+            a.sort((x, y) => SO[x.stat] - SO[y.stat]).forEach(x => tb.appendChild(pRow(x))); });
+          t.appendChild(tb); wrap.appendChild(t); body.appendChild(wrap);
+        });
+        card.append(head, body); list.appendChild(card);
       });
-      t.appendChild(tb); list.appendChild(t);
+      if (!shown) list.appendChild(el('p', 'board-note', 'Nothing matches these filters.'));
     };
     stats.forEach(([k, lab]) => { const b = el('button', null, lab); b.type = 'button'; b.setAttribute('aria-pressed', String(stat === k)); b.addEventListener('click', () => { stat = k; f.querySelectorAll('button[data-s]').forEach(x => x.setAttribute('aria-pressed', String(x === b))); draw(); }); b.dataset.s = k; f.appendChild(b); });
     const lb = el('button', null, 'Leans only'); lb.type = 'button'; lb.setAttribute('aria-pressed', 'false'); lb.addEventListener('click', () => { only = !only; lb.setAttribute('aria-pressed', String(only)); draw(); }); f.appendChild(lb);
-    s1.append(f, list); view.appendChild(s1); draw();
+    const ex = el('button', null, 'Open all'); ex.type = 'button'; ex.addEventListener('click', () => { const any = [...list.querySelectorAll('.pg-head')].some(h => h.getAttribute('aria-expanded') !== 'true'); list.querySelectorAll('.pg-head').forEach(h => { h.setAttribute('aria-expanded', String(any)); h.nextSibling.hidden = !any; }); ex.textContent = any ? 'Close all' : 'Open all'; }); f.appendChild(ex);
+    const bar = el('div', 'pfilters'); bar.append(sel, f);
+    s1.append(bar, list); view.appendChild(s1); draw();
     const L = PLEANS || []; const w = L.filter(x => x.result === 'win').length, l = L.filter(x => x.result === 'loss').length;
     const s2 = section('Prop leans record', L.length ? w + '-' + l + ' · ' + L.filter(x => x.result === 'open').length + ' pending' : 'Locked on Saturdays after the final injury reports');
     s2.appendChild(el('p', 'board-note', 'Leans lock on Saturday at the line shown, after the final injury reports and starters are known, and are graded from the play-by-play after the games.'));
