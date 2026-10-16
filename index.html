@@ -318,6 +318,13 @@ tr.tdrow.open td:first-child::after { content: " −"; }
 .b-bar.home { background: #5b8a1f !important; }
 .b-bar.away { background: #3d6fd0 !important; }
 .skipwhy { font-size: .7rem; color: var(--muted); white-space: normal; max-width: 220px; margin-top: 2px; }
+/* sport sub-navigation */
+.subnav { display: flex; gap: 6px; align-items: center; overflow-x: auto; padding: 10px 0 4px; margin-bottom: 4px; scrollbar-width: none; }
+.subnav::-webkit-scrollbar { display: none; }
+.subnav .sublbl { font-size: .62rem; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: var(--moss); margin-right: 6px; white-space: nowrap; }
+.subnav button { font: 600 .72rem var(--body); letter-spacing: .04em; color: var(--muted); background: var(--card); border: 1px solid var(--rule); border-radius: 999px; padding: 7px 14px; cursor: pointer; white-space: nowrap; }
+.subnav button[aria-pressed="true"] { background: var(--forest); color: var(--cream); border-color: var(--forest); }
+@media (max-width: 440px) { nav.sports { gap: 0; flex-wrap: nowrap; } nav.sports button { padding: 6px 6px; letter-spacing: .06em; font-size: .66rem; } }
 
 </style>
 
@@ -326,20 +333,17 @@ tr.tdrow.open td:first-child::after { content: " −"; }
 <body>
 <div class="wrap">
   <div class="bar">
-    <a class="mark" href="#edition"><span class="mono" aria-hidden="true"><b>T</b><b>B</b></span><span class="name"><strong>The Board</strong><small>Sports intelligence. Higher standards.</small></span></a>
+    <a class="mark" href="#home"><span class="mono" aria-hidden="true"><b>T</b><b>B</b></span><span class="name"><strong>The Board</strong><small>Sports intelligence. Higher standards.</small></span></a>
     <nav class="sports" role="tablist" aria-label="Sections">
-      <button role="tab" id="tab-edition" data-view="edition">Edition</button>
+      <button role="tab" id="tab-home" data-view="home">Home</button>
       <button role="tab" id="tab-nfl" data-view="nfl">NFL</button>
-      <button role="tab" id="tab-ncaaf" data-view="ncaaf">NCAAF</button>
-      <button role="tab" id="tab-td" data-view="td">Touchdowns</button>
-      <button role="tab" id="tab-props" data-view="props">Props</button>
+      <button role="tab" id="tab-ncaaf" data-view="ncaaf">College</button>
       <button role="tab" id="tab-nba" data-view="nba">NBA</button>
-      <button role="tab" id="tab-edges" data-view="edges">Edges</button>
-      <button role="tab" id="tab-teams" data-view="teams">Teams</button>
       <button role="tab" id="tab-record" data-view="record">Record</button>
       <button role="tab" id="tab-method" data-view="method">Method</button>
     </nav>
   </div>
+  <nav class="subnav" id="subnav" aria-label="Sport sections" hidden></nav>
   <main id="view"></main>
   <footer><span class="tag">The Board · @theboardsportshq</span><span>Projections are model output, not betting advice. Lines are DraftKings at the time of posting. Gamble responsibly; if betting stops being fun, call 1-800-GAMBLER (US) or Gambling Help Online on 1800 858 858 (Australia).</span></footer>
 </div>
@@ -419,7 +423,7 @@ const SPORTS = {
   // ---------------------------------------------------------------- edition
   function edition() {
     const hero = el('div', 'hero');
-    const ed = el('div', 'edition'); ed.append(el('span', null, 'The weekly edition'), el('span', null, 'NFL week ' + META.nfl_week), el('span', null, 'College week ' + META.ncaaf_week), el('span', null, 'Posted ' + META.posted));
+    const ed = el('div', 'edition'); ed.append(el('span', null, 'This week'), el('span', null, 'NFL week ' + META.nfl_week), el('span', null, 'College week ' + META.ncaaf_week), el('span', null, 'Posted ' + META.posted));
     const h1 = el('h1'); h1.append('The weekend ahead.'); const l2 = el('span', 'line2', 'Where the model disagrees with the market.'); h1.appendChild(l2);
     const p = el('p', null, 'Every game projected from play-by-play efficiency, adjusted for who each team has played, and set beside the betting line. Picks are locked when posted and graded in public.');
     const cta = el('div', 'cta-row');
@@ -431,7 +435,7 @@ const SPORTS = {
 
     const s1 = section('Biggest edges', 'Top 5 across both sports');
     s1.appendChild(edgeRows(allPicks(), 5));
-    const more = el('div', 'cta-row'); const mb = el('button', 'cta ghost', 'All ' + allPicks().length + ' picks'); mb.type = 'button'; mb.addEventListener('click', () => go('edges')); more.appendChild(mb);
+    const more = el('div', 'cta-row'); const mb = el('button', 'cta ghost', 'All ' + allPicks().length + ' picks'); mb.type = 'button'; mb.addEventListener('click', () => go('nfl/edges')); more.appendChild(mb);
     s1.appendChild(more);
     view.appendChild(s1);
 
@@ -952,9 +956,9 @@ const SPORTS = {
   }
 
   // ------------------------------------------------------------------- edges
-  function edges() {
-    const P = allPicks();
-    const sec = section('Biggest edges', P.length + ' picks this week, ranked by points of disagreement with the market');
+  function edges(only) {
+    const P = allPicks().filter(x => !only || x.sp === only);
+    const sec = section((only ? SPORTS[only].long + ': biggest edges' : 'Biggest edges'), P.length + ' picks this week, ranked by points of disagreement with the market');
     sec.appendChild(el('p', 'board-note', 'The edge is how far the model\'s number is from the betting line. Bigger edges have historically been right more often, and only at the line posted here: the edge shrinks as the market moves.'));
     sec.appendChild(edgeRows(P.slice(0, 5)));
     const wrap = el('div', 'edges-table'); wrap.style.marginTop = '12px';
@@ -969,7 +973,7 @@ const SPORTS = {
     });
     t.appendChild(tb); wrap.appendChild(t); sec.appendChild(wrap); view.appendChild(sec);
     const s2 = section('Model vs market, game by game', 'Tap a game to open it');
-    const dg = el('div', 'viz-grid one'); [chartDumbbell('nfl'), chartDumbbell('ncaaf')].forEach(c => { if (c) dg.appendChild(c); }); s2.appendChild(dg); view.appendChild(s2);
+    const dg = el('div', 'viz-grid one'); (only ? [chartDumbbell(only)] : [chartDumbbell('nfl'), chartDumbbell('ncaaf')]).forEach(c => { if (c) dg.appendChild(c); }); s2.appendChild(dg); view.appendChild(s2);
   }
 
   // ------------------------------------------------------------------ record
@@ -1454,25 +1458,46 @@ const SPORTS = {
     }
   }
 
-  const views = { edition, nfl: () => board('nfl'), ncaaf: () => board('ncaaf'), td, props, nba, edges, teams, record, method };
+  function nbaPart(i) { return () => { nba(); const secs = Array.from(view.children); secs.forEach((c, j) => { if (j !== i) c.remove(); }); }; }
+  const SUBS = {
+    nfl: [['', 'Board', () => board('nfl')], ['td', 'Touchdowns', td], ['props', 'Props', props], ['teams', 'Teams', teams], ['edges', 'Edges', () => edges('nfl')]],
+    ncaaf: [['', 'Board', () => board('ncaaf')], ['edges', 'Edges', () => edges('ncaaf')]],
+    nba: [['', 'Board', nbaPart(0)], ['ratings', 'Ratings', nbaPart(1)], ['players', 'Players', nbaPart(2)], ['leans', 'Leans', nbaPart(3)]]
+  };
+  const TOP = { home: edition, record, method };
+  const ALIAS = { edition: 'home', td: 'nfl/td', props: 'nfl/props', teams: 'nfl/teams', edges: 'nfl/edges' };
+  const subnav = document.getElementById('subnav');
   function go(v) {
-    if (v && v.indexOf('game/') === 0) {
+    v = ALIAS[v] || v || 'home';
+    if (v.indexOf('game/') === 0) {
       const id = decodeURIComponent(v.slice(5)); const f = findGame(id);
-      document.querySelectorAll('nav.sports button').forEach(b => b.setAttribute('aria-selected', String(f && b.dataset.view === f.sp)));
+      document.querySelectorAll('nav.sports button').forEach(b => b.setAttribute('aria-selected', String(!!f && b.dataset.view === f.sp)));
+      drawSub(f ? f.sp : null, null);
       view.innerHTML = ''; gamePage(id);
       try { history.replaceState(null, '', '#' + v); } catch (e) {}
       window.scrollTo(0, 0); return;
     }
-    if (!views[v]) v = 'edition';
-    document.querySelectorAll('nav.sports button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.view === v)));
+    let [top, sub] = v.split('/'); sub = sub || '';
+    if (!SUBS[top] && !TOP[top]) { top = 'home'; sub = ''; }
+    let fn;
+    if (SUBS[top]) { const s = SUBS[top].find(x => x[0] === sub) || SUBS[top][0]; sub = s[0]; fn = s[2]; } else fn = TOP[top];
+    document.querySelectorAll('nav.sports button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.view === top)));
+    drawSub(SUBS[top] ? top : null, sub);
     view.innerHTML = '';
-    views[v]();
-    try { history.replaceState(null, '', '#' + v); } catch (e) {}
+    fn();
+    try { history.replaceState(null, '', '#' + top + (sub ? '/' + sub : '')); } catch (e) {}
     if (!pendingOpen) window.scrollTo(0, 0);
+  }
+  function drawSub(top, sub) {
+    subnav.innerHTML = '';
+    if (!top) { subnav.hidden = true; return; }
+    subnav.hidden = false;
+    subnav.appendChild(el('span', 'sublbl', top === 'ncaaf' ? 'College' : top.toUpperCase()));
+    SUBS[top].forEach(([k, lab]) => { const b = el('button', null, lab); b.type = 'button'; b.setAttribute('aria-pressed', String(sub === k)); b.addEventListener('click', () => go(top + (k ? '/' + k : ''))); subnav.appendChild(b); });
   }
   document.querySelectorAll('nav.sports button').forEach(b => b.addEventListener('click', () => go(b.dataset.view)));
   window.addEventListener('hashchange', () => { const h = (location.hash || '').slice(1); if (h.indexOf('game/') === 0) go(h); });
-  go((location.hash || '').slice(1) || 'edition');
+  go((location.hash || '').slice(1) || 'home');
 })();
 </script>
 
