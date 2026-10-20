@@ -373,6 +373,9 @@ tr.tdrow.open td:first-child::after { content: " −"; }
 .pg-body .mlean { display: none; }
 @media (max-width: 640px) { .pg-body .mlean { display: inline-block; } }
 
+.pg-body .aubest { display: block; font-size: .66rem; color: var(--moss-dk); font-weight: 600; margin-top: 2px; white-space: nowrap; }
+@media (max-width: 640px) { .pg-body .aubest { white-space: normal; font-size: .6rem; max-width: 6.5em; } }
+
 </style>
 
 
@@ -876,6 +879,8 @@ const SPORTS = {
       const lc = el('td', 'num', String(x.line)); if (x.open != null && x.open !== x.line) lc.appendChild(el('span', 'opened', 'opened ' + x.open));
       const lab = el('td'); lab.append(el('span', 'lf', x.label), el('span', 'ls', c.short[x.stat] || x.label));
       const mk = el('td', 'num mkt', pct(x.p_mkt)); if (x.over != null && x.under != null) { mk.title = 'Over ' + (x.over > 0 ? '+' : '') + x.over + ' / Under ' + (x.under > 0 ? '+' : '') + x.under; mk.appendChild(el('span', 'opened', (x.over > 0 ? '+' : '') + x.over + ' / ' + (x.under > 0 ? '+' : '') + x.under)); }
+      if (x.au_over || x.au_under) { const fp = v => (v > 0 ? '+' : '') + v; const au = el('span', 'aubest', 'AU ' + (x.au_over ? 'O ' + fp(x.au_over.price) : '') + (x.au_over && x.au_under ? ' / ' : '') + (x.au_under ? 'U ' + fp(x.au_under.price) : '')); au.title = 'Best Australian price at this line: ' + (x.au_over ? 'over ' + fp(x.au_over.price) + ' (' + x.au_over.book + ')' : '') + (x.au_under ? ', under ' + fp(x.au_under.price) + ' (' + x.au_under.book + ')' : ''); mk.appendChild(au); }
+      else if (x.au && x.au.length) { const au = el('span', 'aubest', 'AU line ' + x.au[0].line); au.title = x.au.map(r => r.book + ' ' + r.line).join(', '); mk.appendChild(au); }
       tr.append(lab, lc, mk, el('td', 'num', x.proj >= 40 ? String(Math.round(x.proj)) : Number(x.proj).toFixed(1)));
       const pm = x.p_model != null ? x.p_model : x.p_over;
       const pc = el('td', 'pbar'); const wr = el('div', 'pb'); const trk = el('div', 'track'); const fl = el('div', 'fill' + (pm >= 57 ? ' high' : pm <= 43 ? ' low' : '')); fl.style.width = pm + '%'; trk.appendChild(fl); wr.append(trk, el('span', null, pct(pm))); pc.appendChild(wr); if (x.lean) pc.appendChild(el('span', 'mlean', (x.lean === 'Over' ? 'O ' : 'U ') + x.line)); tr.appendChild(pc); if (x.lean) tr.classList.add('haslean');
@@ -925,7 +930,7 @@ const SPORTS = {
     s2.appendChild(el('p', 'board-note', c.leanNote));
     view.appendChild(s2);
   }
-  const MKT_NOTE = ' Market is the over chance in the DraftKings prices with the bookmaker margin taken out; Model is the model\'s own over chance at the same line.';
+  const MKT_NOTE = ' Market is the over chance in the DraftKings prices with the bookmaker margin taken out; Model is the model\'s own over chance at the same line. Where shown, AU is the best price at the same line across Australian bookmakers (Sportsbet, TAB, Ladbrokes, Neds and others).';
   function props() {
     if (!PROPS || !PROPS.props) { view.appendChild(section('Player props', 'Coming soon')); return; }
     const GM = {}; (SPORTS.nfl.games || []).forEach(g => { GM[g.id] = g; });
