@@ -358,13 +358,20 @@ tr.tdrow.open td:first-child::after { content: " −"; }
   .pg-body tbody tr:not(.pplayer) td:first-child { padding-left: 12px; }
   .pg-body td.mkt .opened { display: none; }
   .pg-body .skipwhy { display: none; }
-  .pg-body .pcall .chip.lean { display: none; }
+  .pg-body th:last-child, .pg-body td.pcall { display: none; }
+  .pg-body .pb { display: flex; justify-content: flex-start; gap: 0; }
+  .pg-body td.pbar { white-space: nowrap; }
+  .pg-body .mlean { display: inline-block; margin-left: 6px; font-size: .62rem; font-weight: 700; letter-spacing: .04em; color: #fff; background: var(--forest); border-radius: 999px; padding: 2px 6px; }
+  .pg-body tr.haslean td { background: rgba(119,150,74,.10); }
   .pg-body .pcall .chip { padding: 3px 6px; }
   .pg-body .lf { display: none; }
 }
 .pg-body .ls { display: none; }
 @media (max-width: 640px) { .pg-body .ls { display: inline; } }
 @media (max-width: 640px) { .pg-meta span:first-child { display: none; } }
+
+.pg-body .mlean { display: none; }
+@media (max-width: 640px) { .pg-body .mlean { display: inline-block; } }
 
 </style>
 
@@ -871,7 +878,7 @@ const SPORTS = {
       const mk = el('td', 'num mkt', pct(x.p_mkt)); if (x.over != null && x.under != null) { mk.title = 'Over ' + (x.over > 0 ? '+' : '') + x.over + ' / Under ' + (x.under > 0 ? '+' : '') + x.under; mk.appendChild(el('span', 'opened', (x.over > 0 ? '+' : '') + x.over + ' / ' + (x.under > 0 ? '+' : '') + x.under)); }
       tr.append(lab, lc, mk, el('td', 'num', x.proj >= 40 ? String(Math.round(x.proj)) : Number(x.proj).toFixed(1)));
       const pm = x.p_model != null ? x.p_model : x.p_over;
-      const pc = el('td', 'pbar'); const wr = el('div', 'pb'); const trk = el('div', 'track'); const fl = el('div', 'fill' + (pm >= 57 ? ' high' : pm <= 43 ? ' low' : '')); fl.style.width = pm + '%'; trk.appendChild(fl); wr.append(trk, el('span', null, pct(pm))); pc.appendChild(wr); tr.appendChild(pc);
+      const pc = el('td', 'pbar'); const wr = el('div', 'pb'); const trk = el('div', 'track'); const fl = el('div', 'fill' + (pm >= 57 ? ' high' : pm <= 43 ? ' low' : '')); fl.style.width = pm + '%'; trk.appendChild(fl); wr.append(trk, el('span', null, pct(pm))); pc.appendChild(wr); if (x.lean) pc.appendChild(el('span', 'mlean', (x.lean === 'Over' ? 'O ' : 'U ') + x.line)); tr.appendChild(pc); if (x.lean) tr.classList.add('haslean');
       const cc = el('td', 'pcall'); if (x.lean) { const ch = el('span', 'chip pick'); ch.append(el('span', 'lf', x.lean + ' ' + x.line), el('span', 'ls', x.lean[0] + ' ' + x.line)); cc.appendChild(ch); } else if (x.skip) { const sk = el('span', 'chip lean', 'No call'); sk.title = x.skip; cc.appendChild(sk); cc.appendChild(el('div', 'skipwhy', x.skip)); } else cc.appendChild(el('span', 'chip lean', 'No edge'));
       tr.appendChild(cc); return tr;
     };
