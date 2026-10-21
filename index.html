@@ -658,10 +658,11 @@ const SPORTS = {
         else call.append(el('span', 'chip lean', g.pick));
         spread.append(k1, k2, call);
         const tot = el('div', 'col');
-        const t1 = el('div', 'kv'); t1.append(el('span', null, 'Total'), el('span', null, g.mtot.toFixed(1)));
+        const t1 = el('div', 'kv'); t1.append(el('span', null, 'Model'), el('span', null, g.mtot == null ? '—' : g.mtot.toFixed(1)));
         const t2 = el('div', 'kv'); t2.append(el('span', null, 'Market'), el('span', null, g.ktot == null ? '—' : g.ktot.toFixed(1)));
         tot.append(t1, t2);
         if (g.tlean) { const tp = isTPick(sp, g); const tc = el('div', 'call'); tc.append(el('span', 'chip ' + (tp ? 'pick' : 'lean'), tp ? 'Pick' : 'Lean'), el('span', null, g.tlean), el('span', 'edge', '(' + g.tedge.toFixed(1) + ')')); tot.appendChild(tc); }
+        else if (g.tlean_note && g.tedge != null && g.tedge >= 3 && g.mtot != null && g.ktot != null) { const tc = el('div', 'call'); const ch = el('span', 'chip lean', 'No pick'); ch.title = g.tlean_note; tc.append(ch, el('span', null, (g.mtot > g.ktot ? 'Over ' : 'Under ') + g.ktot.toFixed(1)), el('span', 'edge', '(' + g.tedge.toFixed(1) + ', line moved)')); tot.appendChild(tc); }
         const chev = el('span', 'chev'); chev.setAttribute('aria-hidden', 'true');
         head.append(teams, spread, tot, chev);
         const det = detail(sp, g);
@@ -1114,7 +1115,7 @@ const SPORTS = {
       else call.append(el('span', 'chip lean', g.pick));
       spread.append(k1, k2, call);
       const tot = el('div', 'col');
-      const t1 = el('div', 'kv'); t1.append(el('span', null, 'Total'), el('span', null, g.mtot.toFixed(1)));
+      const t1 = el('div', 'kv'); t1.append(el('span', null, 'Model'), el('span', null, g.mtot == null ? '—' : g.mtot.toFixed(1)));
       const t2 = el('div', 'kv'); t2.append(el('span', null, 'Market'), el('span', null, g.ktot == null ? '—' : g.ktot.toFixed(1)));
       tot.append(t1, t2);
       if (g.tlean) { const tc = el('div', 'call'); tc.append(el('span', 'chip lean', 'Lean'), el('span', null, g.tlean), el('span', 'edge', '(' + g.tedge.toFixed(1) + ')')); tot.appendChild(tc); }
