@@ -451,6 +451,10 @@ const SPORTS = {
     .concat(tpicksOf(sp).map(g => ({ sp, g, kind: 'total', pick: g.tlean, edge: g.tedge })))).sort((a, b) => b.edge - a.edge);
   let pendingOpen = null;
 
+  // every graded side pick across sports: NFL and college from the ledger, NBA leans from the NBA board
+  const SIDES = () => LEDGER.concat(((NBA && NBA.leans) || []).filter(r => r.kind !== 'total').map(r => Object.assign({ sport: 'nba' }, r, { kickoff: r.day })));
+  const TOTALS = () => (TLEANS || []).concat(((NBA && NBA.leans) || []).filter(r => r.kind === 'total').map(r => Object.assign({ sport: 'nba' }, r, { kickoff: r.day })));
+  const LG = { nfl: 'NFL · ', ncaaf: 'CFB · ', nba: 'NBA · ' };
   const tally = rows => {
     const w = rows.filter(r => r.result === 'win').length, l = rows.filter(r => r.result === 'loss').length,
           p = rows.filter(r => r.result === 'push').length, o = rows.filter(r => r.result === 'open').length;
@@ -472,14 +476,14 @@ const SPORTS = {
   }
 
   function recordBand() {
-    const T = tally(LEDGER);
+    const T = tally(SIDES());
     const strip = el('div', 'strip');
     const cell = (lbl, big, sub) => { const d = el('div'); d.append(el('div', 'lbl', lbl), el('div', 'big', big), el('div', 'sub', sub)); return d; };
     strip.append(
       cell('Record against the spread', T.w + '-' + T.l + '-' + T.p, T.pct === null ? 'First results this weekend' : (T.pct * 100).toFixed(1) + '% at the posted line'),
       cell('Units at -110', (T.units >= 0 ? '+' : '') + T.units.toFixed(1), T.o + ' picks pending'),
       cell('Picks this week', String(allPicks().length), (picksOf('nfl').length + tpicksOf('nfl').length) + ' NFL · ' + picksOf('ncaaf').length + ' college'),
-      (() => { const f = follow(LEDGER); return cell('Did the market follow?', f.moved ? f.with + ' of ' + f.moved : '—', f.moved ? 'Lines that moved toward our picks' : 'Line moves show here from Thursday'); })());
+      (() => { const f = follow(SIDES()); return cell('Did the market follow?', f.moved ? f.with + ' of ' + f.moved : '—', f.moved ? 'Lines that moved toward our picks' : 'Line moves show here from Thursday'); })());
     return strip;
   }
 
@@ -1229,16 +1233,16 @@ const SPORTS = {
   // ------------------------------------------------------------------ record
   function record() {
     view.appendChild(recordBand());
-    const sec = section('Every pick', LEDGER.length + ' picks locked');
+    const ALLS = SIDES(); const sec = section('Every pick', ALLS.length + ' picks locked');
     sec.appendChild(el('p', 'board-note', 'Each pick is locked at the line it was posted at and graded there. The closing line appears once the game is final: getting a better number than the close is the best long-run sign the model is right.'));
     const tiles = el('div', 'sports-grid');
-    Object.entries(SPORTS).forEach(([k, D]) => {
-      const t = tally(LEDGER.filter(r => r.sport === k));
+    Object.entries(SPORTS).concat([['nba', { long: 'NBA' }]]).forEach(([k, D]) => {
+      const t = tally(ALLS.filter(r => r.sport === k));
       const c = el('div', 'sport'); c.appendChild(el('span', 'status live', D.long));
       c.appendChild(el('h3', null, t.w + '-' + t.l + '-' + t.p));
       c.appendChild(el('span', 'sub', (t.pct === null ? 'No results yet' : (t.pct * 100).toFixed(1) + '% · ' + (t.units >= 0 ? '+' : '') + t.units.toFixed(1) + 'u') + ' · ' + t.o + ' pending'));
       if (t.ncl) c.appendChild(el('span', 'sub', 'Beat the close ' + t.beat + ' of ' + t.ncl + ' (' + sgn(t.clv) + ' pts avg)'));
-      const mf = follow(LEDGER.filter(r => r.sport === k));
+      const mf = follow(ALLS.filter(r => r.sport === k));
       c.appendChild(el('span', 'sub', mf.moved ? 'Market moved toward us ' + mf.with + ' of ' + mf.moved : 'No line moves yet'));
       tiles.appendChild(c);
     });
@@ -1246,9 +1250,9 @@ const SPORTS = {
     const wrap = el('div', 'rec-table'); const tb = el('table'); const hr = el('tr');
     ['Date', 'Game', 'Pick', 'Edge', 'Line now', 'Market', 'Final', 'Result'].forEach(x => hr.appendChild(el('th', null, x)));
     const th = el('thead'); th.appendChild(hr); tb.appendChild(th); const body = el('tbody');
-    LEDGER.slice().sort((a, b) => (a.kickoff < b.kickoff ? 1 : a.kickoff > b.kickoff ? -1 : b.edge - a.edge)).forEach(r => {
+    ALLS.slice().sort((a, b) => (a.kickoff < b.kickoff ? 1 : a.kickoff > b.kickoff ? -1 : b.edge - a.edge)).forEach(r => {
       const tr = el('tr');
-      tr.append(el('td', null, day(r.kickoff)), el('td', null, (r.sport === 'nfl' ? 'NFL · ' : 'CFB · ') + r.away + ' @ ' + r.home),
+      tr.append(el('td', null, day(r.kickoff)), el('td', null, (LG[r.sport] || '') + r.away + ' @ ' + r.home),
         el('td', 'strong', r.side + ' ' + sgn(r.line)), el('td', null, r.edge.toFixed(1)));
       const ref = r.close_line != null ? r.close_line : r.latest_line;
       tr.appendChild(el('td', null, ref == null ? '—' : sgn(ref) + (r.close_line != null ? ' close' : '')));
@@ -1260,16 +1264,16 @@ const SPORTS = {
       tr.appendChild(res); body.appendChild(tr);
     });
     tb.appendChild(body); wrap.appendChild(tb); sec.appendChild(wrap); view.appendChild(sec);
-    const T = TLEANS || [];
+    const T = TOTALS();
     const tw = T.filter(r => r.result === 'win').length, tl = T.filter(r => r.result === 'loss').length, tp = T.filter(r => r.result === 'push').length;
     const s2 = section('Totals', T.length ? tw + '-' + tl + '-' + tp + ' · ' + T.filter(r => r.result === 'open').length + ' pending' : 'From week 7');
-    s2.appendChild(el('p', 'board-note', 'Overs and unders where the model is 3+ points off the total when lines open, locked and graded at that line like the spread picks. In testing (every game predicted only from earlier data) these went 344-278 (55.3%) from 2019 to 2026, with unders stronger than overs; the most recent seasons were closer to break-even, so this record is the one to watch.'));
+    s2.appendChild(el('p', 'board-note', 'Overs and unders where the model is 3+ points off the total when lines open (NFL and college; NBA totals leans are listed here too), locked and graded at that line like the spread picks. In testing, every game predicted only from earlier data: NFL totals went 528-374 (58.5%) against the opening total from 2018 to 2026, and college totals 571-445 (56.2%) from 2022 to 2026. Testing is not a guarantee: this live record is the one to watch.'));
     if (T.length) {
       const w2 = el('div', 'rec-table'); const t2 = el('table'); const h2 = el('tr');
-      ['Week', 'Game', 'Lean', 'Model', 'Edge', 'Final', 'Result'].forEach(x => h2.appendChild(el('th', null, x)));
+      ['When', 'Game', 'Lean', 'Model', 'Edge', 'Final', 'Result'].forEach(x => h2.appendChild(el('th', null, x)));
       const th2 = el('thead'); th2.appendChild(h2); t2.appendChild(th2); const b2 = el('tbody');
       T.slice().reverse().forEach(r => { const tr = el('tr');
-        tr.append(el('td', null, String(r.week)), el('td', null, (r.sport === 'ncaaf' ? 'CFB · ' : 'NFL · ') + r.away + ' @ ' + r.home), el('td', 'strong', (r.side === 'over' ? 'Over ' : 'Under ') + r.line), el('td', null, r.model.toFixed(1)), el('td', null, r.edge.toFixed(1)), el('td', null, r.final || '—'));
+        tr.append(el('td', null, r.week != null ? 'Wk ' + r.week : day(r.day)), el('td', null, (LG[r.sport] || 'NFL · ') + r.away + ' @ ' + r.home), el('td', 'strong', (r.side === 'over' ? 'Over ' : 'Under ') + r.line), el('td', null, r.model != null ? r.model.toFixed(1) : '—'), el('td', null, r.edge.toFixed(1)), el('td', null, r.final || '—'));
         const rc = el('td'); rc.appendChild(el('span', 'chip ' + (r.result === 'win' ? 'pick' : 'lean'), r.result === 'open' ? 'Pending' : r.result)); tr.appendChild(rc); b2.appendChild(tr); });
       t2.appendChild(b2); w2.appendChild(t2); s2.appendChild(w2);
     }
